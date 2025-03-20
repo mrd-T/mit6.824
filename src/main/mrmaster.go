@@ -9,7 +9,7 @@ package main
 // Please do not change this file.
 //
 
-import "../mr"
+import "6.824-golabs-2020/mr"
 import "time"
 import "os"
 import "fmt"
@@ -26,4 +26,5 @@ func main() {
 	}
 
 	time.Sleep(time.Second)
+	fmt.Println("Finished")
 }
