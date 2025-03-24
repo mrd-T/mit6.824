@@ -51,6 +51,7 @@ type ReportTaskArgs struct {
 }
 
 type ReportTaskReply struct {
+	Done bool
 }
 
 // Cook up a unique-ish UNIX-domain socket name

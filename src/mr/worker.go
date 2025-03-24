@@ -57,6 +57,7 @@ func (w *WorkerT) run() {
 	}
 }
 
+// map进程
 func (w *WorkerT) runMapTask(t *Task) {
 	content, err := ioutil.ReadFile(t.FileName)
 	if err != nil {
@@ -90,6 +91,7 @@ func (w *WorkerT) runMapTask(t *Task) {
 	w.CallReportTask(t, nil)
 }
 
+// reduce任务
 func (w *WorkerT) runReduceTask(t *Task) {
 	kvReduce := make(map[string][]string)
 	for mapIdx := 0; mapIdx < t.NMap; mapIdx++ {
@@ -149,7 +151,7 @@ func CallExample() {
 	fmt.Printf("reply.Y %v\n", reply.Y)
 }
 */
-
+//注册进程
 func (w *WorkerT) CallRegister() {
 	args := RegisterArgs{}
 	reply := RegisterReply{}
@@ -168,6 +170,7 @@ func (w *WorkerT) CallGetTask() *Task {
 	return reply.Task
 }
 
+// 返回信息
 func (w *WorkerT) CallReportTask(t *Task, err error) {
 	args := ReportTaskArgs{
 		Done:      true,

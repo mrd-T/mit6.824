@@ -93,7 +93,7 @@ func (m *Master) schedule() {
 		case TaskStatusReady:
 			allDone = false
 			m.TaskCh <- m.makeTask(i)
-			fmt.Println("123")
+			//fmt.Println("123")
 			m.TaskStats[i].Status = TaskStatusQueue
 		case TaskStatusQueue:
 			allDone = false
