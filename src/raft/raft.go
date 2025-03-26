@@ -39,7 +39,33 @@ import (
 // in Lab 3 you'll want to send other kinds of messages (e.g.,
 // snapshots) on the applyCh; at that point you can add fields to
 // ApplyMsg, but set CommandValid to false for these other uses.
+type Status int
+
+// VoteState 投票的状态 2A
+type VoteState int
+
+// AppendEntriesState 追加日志的状态 2A 2B
+type AppendEntriesState int
+
 var HeartBeatTimeout = 100 * time.Millisecond
+
+const (
+	Normal VoteState = iota //投票过程正常
+	Killed                  //Raft节点已终止
+	Expire                  //投票(消息\竞选者）过期
+	Voted                   //本Term内已经投过票
+
+)
+
+const (
+	AppNormal    AppendEntriesState = iota // 追加正常
+	AppOutOfDate                           // 追加过时
+	AppKilled                              // Raft程序终止
+	AppRepeat                              // 追加重复 (2B
+	AppCommited                            // 追加的日志已经提交 (2B
+	Mismatch                               // 追加不匹配 (2B
+
+)
 
 type ApplyMsg struct {
 	CommandValid bool
@@ -58,23 +84,42 @@ type Raft struct {
 	// Your data here (2A, 2B, 2C).
 	// Look at the paper's Figure 2 for a description of what
 	// state a Raft server must maintain.
-	status    string //状态
-	term      int    //第几轮投票
-	voteFor   int    //为谁投票,-1表示还没投票
-	voteCount int    //获得总票数,初始为0
+	status      string     //状态
+	term        int        //第几轮投票
+	voteFor     int        //为谁投票,-1表示还没投票
+	voteCount   int        //获得总票数,初始为0
+	logs        []LogEntry //日志条目数组，包含了状态机要执行的指令集，以及收到领导时的任期号
+	commitIndex int        // 状态机中已知的被提交的日志条目的索引值(初始化为0，持续递增）
+	lastApplied int        // 最后一个被追加到状态机日志的索引值
 
-	overtime time.Duration //任期倒计时总长
-	timer    *time.Ticker  //实现倒计时功能
+	// leader拥有的可见变量，用来管理他的follower(leader经常修改的）
+	// nextIndex与matchIndex初始化长度应该为len(peers)，Leader对于每个Follower都记录他的nextIndex和matchIndex
+	// nextIndex指的是下一个的appendEntries要从哪里开始
+	// matchIndex指的是已知的某follower的log与leader的log最大匹配到第几个Index,已经apply
+	nextIndex  []int         // 对于每一个server，需要发送给他下一个日志条目的索引值（初始化为leader日志index+1,那么范围就对标len）
+	matchIndex []int         // 对于每一个server，已经复制给该server的最后日志条目下标
+	applyChan  chan ApplyMsg // 日志都是存在这里client取（2B）
+	overtime   time.Duration //任期倒计时总长
+	timer      *time.Ticker  //实现倒计时功能
 }
-
+type LogEntry struct {
+	Term    int
+	Command interface{}
+}
 type AppendEntriesArgs struct {
-	Term     int
-	LeaderId int
+	Term         int        // leader的任期
+	LeaderId     int        // leader自身的ID
+	PrevLogIndex int        // 预计要从哪里追加的index，因此每次要比当前的len(logs)多1 args初始化为：rf.nextIndex[i] - 1
+	PrevLogTerm  int        // 追加新的日志的任期号(这边传的应该都是当前leader的任期号 args初始化为：rf.currentTerm
+	Entries      []LogEntry // 预计存储的日志（为空时就是心跳连接）
+	LeaderCommit int        // leader的commit index指的是最后一个被大多数机器都复制的日志Index
 }
 
 type AppendEntriesReply struct {
-	Term    int
-	Success bool
+	Term     int                // leader的term可能是过时的，此时收到的Term用于更新他自己
+	Success  bool               //	如果follower与Args中的PreLogIndex/PreLogTerm都匹配才会接过去新的日志（追加），不匹配直接返回false
+	AppState AppendEntriesState // 追加状态
+
 }
 
 // return currentTerm and whether this server
@@ -379,8 +424,21 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 	index := -1
 	term := -1
 	isLeader := true
-
+	if rf.killed() {
+		return index, term, false
+	}
 	// Your code here (2B).
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
+
+	// 如果不是leader，直接返回
+	if rf.status != "Leader" {
+		return index, term, false
+	}
+	appendLog := LogEntry{Term: rf.term, Command: command}
+	rf.logs = append(rf.logs, appendLog)
+	index = len(rf.logs)
+	term = rf.term
 
 	return index, term, isLeader
 }
