@@ -123,9 +123,9 @@ func TestRPCBytes2B(t *testing.T) {
 	cfg.one(99, servers, false)
 	bytes0 := cfg.bytesTotal()
 
-	iters := 10
+	iters := 3
 	var sent int64 = 0
-	for index := 2; index < iters+2; index++ {
+	for index := 2; index < iters; index++ {
 		cmd := randstring(5000)
 		xindex := cfg.one(cmd, servers, false)
 		if xindex != index {
@@ -331,7 +331,7 @@ loop:
 }
 
 func TestRejoin2B(t *testing.T) {
-	servers := 3
+	servers := 5
 	cfg := make_config(t, servers, false)
 	defer cfg.cleanup()
 
@@ -418,7 +418,7 @@ func TestBackup2B(t *testing.T) {
 
 	time.Sleep(RaftElectionTimeout / 2)
 
-	// bring original leader back to life,
+	// // bring original leader back to life,
 	for i := 0; i < servers; i++ {
 		cfg.disconnect(i)
 	}

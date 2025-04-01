@@ -309,6 +309,7 @@ func (cfg *config) checkOneLeader() int {
 		leaders := make(map[int][]int)
 		for i := 0; i < cfg.n; i++ {
 			if cfg.connected[i] {
+				// fmt.Printf("checkOneLeader: server %d %d\n", i, iters)
 				if term, leader := cfg.rafts[i].GetState(); leader {
 					leaders[term] = append(leaders[term], i)
 				}
@@ -371,6 +372,7 @@ func (cfg *config) nCommitted(index int) (int, interface{}) {
 		}
 
 		cfg.mu.Lock()
+		// fmt.Println(len(cfg.logs[i]), index)
 		cmd1, ok := cfg.logs[i][index]
 		cfg.mu.Unlock()
 
