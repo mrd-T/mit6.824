@@ -6,7 +6,7 @@ success_count=0
 fail_count=0
 
 # 设置测试次数
-max_tests=50
+max_tests=200
 
 for ((i=1; i<=max_tests; i++))
 do

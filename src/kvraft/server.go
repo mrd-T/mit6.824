@@ -1,12 +1,13 @@
 package kvraft
 
 import (
-	"../labrpc"
-	"../raft"
-	"6.824-golabs-2020/labgob"
 	"log"
 	"sync"
 	"sync/atomic"
+
+	"6.824-golabs-2020/labgob"
+	"6.824-golabs-2020/labrpc"
+	"6.824-golabs-2020/raft"
 )
 
 const Debug = 0
