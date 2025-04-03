@@ -1,0 +1,35 @@
+=== RUN   TestReliableChurn2C
+Test (2C): churn ...
+  ... Passed --  16.5  5  721  510619  353
+--- PASS: TestReliableChurn2C (16.47s)
+=== RUN   TestUnreliableChurn2C
+Test (2C): unreliable churn ...
+  ... Passed --  16.4  5  627  213381  145
+--- PASS: TestUnreliableChurn2C (16.42s)
+=== RUN   TestFigure8Unreliable2C
+Test (2C): Figure 8 (unreliable) ...
+    config.go:479: one(4663) failed to reach agreement
+--- FAIL: TestFigure8Unreliable2C (91.29s)
+=== RUN   TestUnreliableAgree2C
+Test (2C): unreliable agreement ...
+  ... Passed --  10.3  5  344  121213  246
+--- PASS: TestUnreliableAgree2C (10.26s)
+=== RUN   TestPersist12C
+Test (2C): basic persistence ...
+  ... Passed --   8.0  3   96   24117    6
+--- PASS: TestPersist12C (8.04s)
+=== RUN   TestPersist22C
+Test (2C): more persistence ...
+  ... Passed --  33.3  5 2039  447039   17
+--- PASS: TestPersist22C (33.28s)
+=== RUN   TestPersist32C
+Test (2C): partitioned leader and one follower crash, leader restarts ...
+  ... Passed --   5.0  3   43   10705    4
+--- PASS: TestPersist32C (4.99s)
+=== RUN   TestFigure82C
+Test (2C): Figure 8 ...
+  ... Passed --  40.9  5  802  113796    7
+--- PASS: TestFigure82C (40.89s)
+FAIL
+exit status 1
+FAIL	6.824-golabs-2020/raft	221.694s

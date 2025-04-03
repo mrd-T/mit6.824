@@ -76,6 +76,7 @@ type ApplyMsg struct {
 	CommandValid bool
 	Command      interface{}
 	CommandIndex int
+	SnapshotTerm int
 }
 
 // A Go object implementing a single Raft peer.
@@ -145,7 +146,7 @@ func (rf *Raft) HeartBeatIsTimeout() bool {
 
 // 选举重置
 func (rf *Raft) ResetElectionTimer() {
-	rf.ElectionTimeoutPeriod = 300 + rand.Int()%150
+	rf.ElectionTimeoutPeriod = 1000 + rand.Int()%150
 	rf.LastElectionTimeoutTime = time.Now()
 }
 
@@ -261,7 +262,7 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 	defer rf.mu.Unlock()
 	// fmt.Printf("args:%+v %d任务 from %d号任务(term:%d)\n", args, rf.me, args.LeaderId, args.Term)
 	// Your code here (2A, 2B).
-	// fmt.Printf("收到心跳!	%d号任务(term:%d)收到来自%d号任务(term:%d)的心跳!,\n", rf.me, rf.term, args.LeaderId, args.Term)
+	DPrintf("收到心跳!	%d号任务(term:%d)收到来自%d号任务(term:%d)的心跳!,\n", rf.me, rf.term, args.LeaderId, args.Term)
 	//情况1: 收到的rpc的term太旧
 	if args.Term < rf.term {
 		reply.Term = rf.term
@@ -325,10 +326,12 @@ func (rf *Raft) AppendEntries(args *AppendEntriesArgs, reply *AppendEntriesReply
 		if ridx < len(rf.logs) && rf.logs[ridx].Term != log.Term {
 			// 某位置发生了冲突, 覆盖这个位置开始的所有内容
 			rf.logs = rf.logs[:ridx]
+			DPrintf("server %v 的log与args发生冲突, 进行移除\n", rf.me)
 			rf.logs = append(rf.logs, args.Entries[idx:]...)
 			break
 		} else if ridx == len(rf.logs) {
 			// 没有发生冲突但长度更长了, 直接拼接
+			DPrintf("server %v 的log与args没有冲突, 直接拼接\n", rf.me)
 			rf.logs = append(rf.logs, args.Entries[idx:]...)
 			break
 		}
@@ -561,23 +564,24 @@ func (rf *Raft) HeartBeatTicker() {
 		if rf.HeartBeatIsTimeout() {
 			if rf.status == "leader" {
 				rf.sendHeartBeat()
-				rf.ResetHeart()
 			}
+			rf.ResetHeart()
 		}
 		rf.mu.Unlock()
-		t := 30 + (rand.Int63() % 5)
-		time.Sleep(time.Duration(t) * time.Millisecond)
+
+		time.Sleep(HeartBeatTimeout)
 		// time.Sleep(time.Duration(rf.HeartBeatTimeoutPeriod) * time.Millisecond)
 	}
 }
 
 // 开始选举 ?
 func (rf *Raft) startelection() {
-	rf.electionTimerreset()
+	// rf.electionTimerreset()
 	rf.term++
 	rf.voteFor = rf.me
 	rf.voteCount = 1
 	rf.persist()
+	votecount := 1
 	for i := 0; i < len(rf.peers); i++ {
 		if i == rf.me {
 			continue
@@ -592,7 +596,7 @@ func (rf *Raft) startelection() {
 
 		// fmt.Printf("发起投票! 	第%d号任务(term:%d)向第%d号任务发起投票\n", rf.me, rf.term, i)
 		//以线程的方式发起投票,前面参考文献里面关于锁那个部分提到了
-		go rf.sendRequestVote(i, &Args, &reply)
+		go rf.sendRequestVote(i, &Args, &reply, &votecount)
 	}
 }
 
@@ -617,8 +621,11 @@ func (rf *Raft) sendHeartBeat() {
 		// if rf.nextIndex[j] == len(rf.logs)+1 {
 		// 	fmt.Printf("rf.nextIndex[j]:%d, len(rf.logs):%d\n", rf.nextIndex[j], len(rf.logs))
 		// }
-		appendEntriesArgs.Entries = rf.logs[rf.nextIndex[j]:]
+		// appendEntriesArgs.Entries = rf.logs[rf.nextIndex[j]:]
 
+		appendEntriesArgs.Entries = make([]LogEntry, len(rf.logs[rf.nextIndex[j]:]))
+		copy(appendEntriesArgs.Entries, rf.logs[rf.nextIndex[j]:]) // 正确深拷贝
+		// copy(appendEntriesArgs.Entries, rf.logs[rf.nextIndex[j]:])
 		// 代表已经不是初始值0
 		if rf.nextIndex[j] > 0 {
 			appendEntriesArgs.PrevLogIndex = rf.nextIndex[j] - 1
@@ -637,13 +644,12 @@ func (rf *Raft) sendHeartBeat() {
 }
 
 // 请求给我投票 没问题
-func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply) bool {
+func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *RequestVoteReply, votecount *int) bool {
 
 	// fmt.Printf("%d任务,%d term,开始选举\n", rf.me, rf.term)
 	// fmt.Printf("	同意投票! 	%d号任务(term:%d) 同意给	%d号任务(term:%d) 投票\n", server, rf.term, rf.me, reply.Term)
 	ok := rf.peers[server].Call("Raft.RequestVote", args, reply)
 	for ok == false {
-
 		ok = rf.peers[server].Call("Raft.RequestVote", args, reply)
 	}
 	rf.mu.Lock()
@@ -661,7 +667,6 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 		rf.persist()
 		return false
 	}
-	rf.electionTimerreset()
 	// rf.timer.Reset(time.Duration(150+rand.Intn(200)) * time.Millisecond)
 	if reply.VoteGranted == true {
 		if rf.status == "follower" {
@@ -670,11 +675,12 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 			rf.persist()
 			return ok
 		}
-		if rf.voteCount <= (len(rf.peers))/2 {
-			rf.voteCount++
+		rf.electionTimerreset()
+		if *votecount <= (len(rf.peers))/2 {
+			*votecount++
 			rf.persist()
 		}
-		if rf.voteCount > (len(rf.peers))/2 {
+		if *votecount > (len(rf.peers))/2 {
 			if rf.status == "leader" {
 				return ok
 			}
@@ -698,9 +704,10 @@ func (rf *Raft) sendRequestVote(server int, args *RequestVoteArgs, reply *Reques
 
 const CommitCheckTimeInterval = time.Duration(50) * time.Millisecond // 检查是否可以commit的间隔
 func (rf *Raft) CommitChecker() {
+	rf.mu.Lock()
+	defer rf.mu.Unlock()
 	// 检查是否有新的commit
 	for !rf.killed() {
-		rf.mu.Lock()
 		for rf.commitIndex <= rf.lastApplied {
 			rf.condApply.Wait()
 		}
@@ -713,13 +720,17 @@ func (rf *Raft) CommitChecker() {
 				CommandValid: true,
 				Command:      rf.logs[rf.lastApplied].Command,
 				CommandIndex: rf.lastApplied,
+				SnapshotTerm: rf.logs[rf.lastApplied].Term,
 			}
+			rf.mu.Unlock()
 			rf.applyChan <- msg
+			rf.mu.Lock()
 			// fmt.Printf("%d任务.term :%d 现在长度%d,最终长度：%d %+v\n", rf.me, rf.term, rf.lastApplied, rf.commitIndex, msg)
 			DPrintf("server %v 准备将命令 %v(索引为 %v ) 应用到状态机\n", rf.me, msg.Command, msg.CommandIndex)
 		}
 		rf.mu.Unlock()
 		time.Sleep(CommitCheckTimeInterval)
+		rf.mu.Lock()
 	}
 }
 
@@ -784,16 +795,16 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	rf.applyChan = applyCh
 	rf.voteCount = 0
 	// initialize from state persisted before a crash
-	for i := 0; i < len(rf.nextIndex); i++ {
-		rf.nextIndex[i] = len(rf.logs) // raft中的index是从1开始的
-	}
-	rf.overtime = time.Duration(300+rand.Intn(150)) * time.Millisecond
 	rf.electionTimer = time.NewTimer(rf.overtime)
 	rf.heartbeatTimer = time.NewTimer(HeartBeatTimeout)
+	rf.ResetElectionTimer()
 	rf.LastHeartBeatTime = time.Now()
 	rf.LastElectionTimeoutTime = time.Now()
 	rf.readPersist(persister.ReadRaftState())
 	rf.condApply = sync.NewCond(&rf.mu)
+	for i := 0; i < len(rf.nextIndex); i++ {
+		rf.nextIndex[i] = len(rf.logs) // raft中的index是从1开始的
+	}
 	go rf.Ticker()
 	go rf.HeartBeatTicker()
 	go rf.CommitChecker()

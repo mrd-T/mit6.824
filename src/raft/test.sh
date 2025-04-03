@@ -6,14 +6,14 @@ success_count=0
 fail_count=0
 
 # 设置测试次数
-max_tests=200
+max_tests=500
 
 for ((i=1; i<=max_tests; i++))
 do
     echo "Running test iteration $i of $max_tests..."
 
     # 运行 go 测试命令
-    go test -v -run 2B &> output.log
+    go test -v -run 2C &> output.log
 
     # 检查 go 命令的退出状态
     if [ "$?" -eq 0 ]; then

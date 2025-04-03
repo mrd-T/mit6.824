@@ -693,6 +693,10 @@ func internalChurn(t *testing.T, unreliable bool) {
 
 	cfg.end()
 }
+func TestReliableChurn2C(t *testing.T) {
+	internalChurn(t, false)
+}
+
 func TestUnreliableChurn2C(t *testing.T) {
 	internalChurn(t, true)
 }
@@ -751,6 +755,7 @@ func TestFigure8Unreliable2C(t *testing.T) {
 
 	cfg.end()
 }
+
 func TestUnreliableAgree2C(t *testing.T) {
 	servers := 5
 	cfg := make_config(t, servers, true)
@@ -1110,9 +1115,9 @@ func TestFigure82C(t *testing.T) {
 // 	cfg.end()
 // }
 
-func TestReliableChurn2C(t *testing.T) {
-	internalChurn(t, false)
-}
+// func TestReliableChurn2C(t *testing.T) {
+// 	internalChurn(t, false)
+// }
 
 // func TestUnreliableChurn2C(t *testing.T) {
 // 	internalChurn(t, true)

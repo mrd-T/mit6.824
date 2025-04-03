@@ -62,6 +62,17 @@ func (ps *Persister) ReadSnapshot() []byte {
 	defer ps.mu.Unlock()
 	return ps.snapshot
 }
+func clone(orig []byte) []byte {
+	x := make([]byte, len(orig))
+	copy(x, orig)
+	return x
+}
+func (ps *Persister) Save(raftstate []byte, snapshot []byte) {
+	ps.mu.Lock()
+	defer ps.mu.Unlock()
+	ps.raftstate = clone(raftstate)
+	ps.snapshot = clone(snapshot)
+}
 
 func (ps *Persister) SnapshotSize() int {
 	ps.mu.Lock()

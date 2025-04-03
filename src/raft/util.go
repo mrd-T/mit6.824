@@ -5,7 +5,7 @@ import (
 )
 
 // Debugging
-const Debug = true
+const Debug = false
 
 func DPrintf(format string, a ...interface{}) (n int, err error) {
 	if Debug {
@@ -13,6 +13,12 @@ func DPrintf(format string, a ...interface{}) (n int, err error) {
 	}
 	return
 }
+
+// func GetRandomElectTimeOut(rd *rand.Rand) int {
+// 	plusMs := int(rd.Float64() * 150)
+
+// 	return plusMs + ElectTimeOutBase
+// }
 
 // func GetRandomElectTimeOut(rd *rand.Rand) int {
 // 	plusMs := int(rd.Float64() * 500.0)
