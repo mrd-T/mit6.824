@@ -1,2 +1,6 @@
 === RUN   TestReliableChurn2C
 Test (2C): churn ...
+  ... Passed --  16.5  5  739  315652  187
+--- PASS: TestReliableChurn2C (16.46s)
+=== RUN   TestUnreliableChurn2C
+Test (2C): unreliable churn ...
