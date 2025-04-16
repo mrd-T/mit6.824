@@ -1,6 +1,34 @@
 === RUN   TestReliableChurn2C
 Test (2C): churn ...
-  ... Passed --  16.5  5  739  315652  187
---- PASS: TestReliableChurn2C (16.46s)
+  ... Passed --  16.5  5 1452 1877381  843
+--- PASS: TestReliableChurn2C (16.49s)
 === RUN   TestUnreliableChurn2C
 Test (2C): unreliable churn ...
+  ... Passed --  16.2  5 1100  538795  555
+--- PASS: TestUnreliableChurn2C (16.17s)
+=== RUN   TestFigure8Unreliable2C
+Test (2C): Figure 8 (unreliable) ...
+  ... Passed --  38.3  5 3324 7196970  325
+--- PASS: TestFigure8Unreliable2C (38.27s)
+=== RUN   TestUnreliableAgree2C
+Test (2C): unreliable agreement ...
+  ... Passed --   2.7  5  220   74046  246
+--- PASS: TestUnreliableAgree2C (2.67s)
+=== RUN   TestPersist12C
+Test (2C): basic persistence ...
+  ... Passed --   4.4  3   94   22032    6
+--- PASS: TestPersist12C (4.43s)
+=== RUN   TestPersist22C
+Test (2C): more persistence ...
+  ... Passed --  16.9  5  956  193546   16
+--- PASS: TestPersist22C (16.86s)
+=== RUN   TestPersist32C
+Test (2C): partitioned leader and one follower crash, leader restarts ...
+  ... Passed --   2.0  3   38    8749    4
+--- PASS: TestPersist32C (2.00s)
+=== RUN   TestFigure82C
+Test (2C): Figure 8 ...
+  ... Passed --  29.6  5  864  173361   20
+--- PASS: TestFigure82C (29.62s)
+PASS
+ok  	6.824-golabs-2020/raft	126.511s
